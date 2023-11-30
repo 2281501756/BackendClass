@@ -12,3 +12,6 @@ up:
 
 down:
 	migrate -path db/migration -database "postgresql://root:donghao@localhost:5432/bank?sslmode=disable" -verbose down
+
+gen:
+	sqlc generate
