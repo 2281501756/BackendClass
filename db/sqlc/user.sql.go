@@ -11,22 +11,33 @@ import (
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO "user" (
-    id, name, email
+    id, name, email, money
 ) VALUES (
-             $1, $2, $3
-         ) RETURNING id, name, email
+             $1, $2, $3, $4
+         ) RETURNING id, name, email, money
 `
 
 type CreateUserParams struct {
 	ID    int32  `json:"id"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
+	Money int32  `json:"money"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, arg.ID, arg.Name, arg.Email)
+	row := q.db.QueryRowContext(ctx, createUser,
+		arg.ID,
+		arg.Name,
+		arg.Email,
+		arg.Money,
+	)
 	var i User
-	err := row.Scan(&i.ID, &i.Name, &i.Email)
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.Money,
+	)
 	return i, err
 }
 
@@ -41,19 +52,41 @@ func (q *Queries) DeleteUser(ctx context.Context, id int32) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, name, email FROM "user"
+SELECT id, name, email, money FROM "user"
 WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetUser(ctx context.Context, id int32) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUser, id)
 	var i User
-	err := row.Scan(&i.ID, &i.Name, &i.Email)
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.Money,
+	)
+	return i, err
+}
+
+const getUserForUpdate = `-- name: GetUserForUpdate :one
+SELECT id, name, email, money FROM "user"
+WHERE id = $1 LIMIT 1 for update
+`
+
+func (q *Queries) GetUserForUpdate(ctx context.Context, id int32) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserForUpdate, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.Money,
+	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, name, email FROM "user"
+SELECT id, name, email, money FROM "user"
 ORDER BY name
 `
 
@@ -66,7 +99,12 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 	var items []User
 	for rows.Next() {
 		var i User
-		if err := rows.Scan(&i.ID, &i.Name, &i.Email); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Email,
+			&i.Money,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -96,4 +134,27 @@ type UpdateUserParams struct {
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 	_, err := q.db.ExecContext(ctx, updateUser, arg.ID, arg.Name, arg.Email)
 	return err
+}
+
+const updateUserMoney = `-- name: UpdateUserMoney :one
+update "user"
+set money = money + $1
+where id = $2 returning id, name, email, money
+`
+
+type UpdateUserMoneyParams struct {
+	Money int32 `json:"money"`
+	ID    int32 `json:"id"`
+}
+
+func (q *Queries) UpdateUserMoney(ctx context.Context, arg UpdateUserMoneyParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUserMoney, arg.Money, arg.ID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.Money,
+	)
+	return i, err
 }

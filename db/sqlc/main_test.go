@@ -15,8 +15,11 @@ const (
 	dbSource = "postgresql://root:donghao@localhost:5432/bank?sslmode=disable"
 )
 
+var TestStore Store
+
 func TestMain(m *testing.M) {
 	conn, err := sql.Open(dbDriver, dbSource)
+	TestStore = NewStore(conn)
 	if err != nil {
 		log.Fatal("connect error", err.Error())
 	}

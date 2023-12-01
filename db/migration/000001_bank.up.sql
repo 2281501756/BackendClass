@@ -4,7 +4,8 @@ create table "user"
         constraint user_pk
             primary key,
     name  varchar(10) default ''::character varying not null,
-    email varchar(20) default ''::character varying not null
+    email varchar(20) default ''::character varying not null,
+    money integer     default 0                     not null
 );
 
 alter table "user"
